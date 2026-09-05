@@ -5,7 +5,7 @@ import { Input } from "./input";
 import { Label } from "./label";
 import { Button } from "./button";
 import { Card, CardContent } from "./card";
-import { Search, User, X, Check, Plus } from "lucide-react";
+import { Search, User, X, Check } from "lucide-react";
 
 export interface UserSearchItem {
   id?: string;
@@ -131,18 +131,6 @@ export function UserSearch({
             onClick={handleClear}
           >
             <X className="h-4 w-4" />
-          </Button>
-        )}
-        {!selectedUser && !disabled && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
-            onClick={() => setIsOpen(true)}
-            aria-label="Choose project manager"
-          >
-            <Plus className="h-4 w-4 text-gray-500" />
           </Button>
         )}
       </div>

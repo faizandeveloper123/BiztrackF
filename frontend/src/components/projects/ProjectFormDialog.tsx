@@ -74,40 +74,6 @@ export function ProjectFormDialog({
                 />
               </div>
               <div className="space-y-2">
-                <UserSearch
-                  users={users}
-                  value={selectedProjectManager}
-                  onSelect={(user) =>
-                    onFormDataChange({
-                      ...formData,
-                      projectManagerId: user ? user.id || user.userId || "" : "",
-                    })
-                  }
-                  placeholder="Search by name or email..."
-                  label="Project manager *"
-                  required
-                  error={
-                    formError === "Please select a project manager"
-                      ? formError
-                      : undefined
-                  }
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <UserMultiSearch
-                  users={users}
-                  value={selectedTeamMembers}
-                  onChange={(selected) =>
-                    onFormDataChange({
-                      ...formData,
-                      teamMemberIds: selected.map((u) => u.id || u.userId || ""),
-                    })
-                  }
-                  placeholder="Search to add team members..."
-                  label="Team members"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="project-form-status">Status</Label>
                 <select
                   id="project-form-status"
@@ -218,6 +184,40 @@ export function ProjectFormDialog({
                     onFormDataChange({ ...formData, description: e.target.value })
                   }
                   rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <UserSearch
+                  users={users}
+                  value={selectedProjectManager}
+                  onSelect={(user) =>
+                    onFormDataChange({
+                      ...formData,
+                      projectManagerId: user ? user.id || user.userId || "" : "",
+                    })
+                  }
+                  placeholder="Search by name or email..."
+                  label="Project manager *"
+                  required
+                  error={
+                    formError === "Please select a project manager"
+                      ? formError
+                      : undefined
+                  }
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <UserMultiSearch
+                  users={users}
+                  value={selectedTeamMembers}
+                  onChange={(selected) =>
+                    onFormDataChange({
+                      ...formData,
+                      teamMemberIds: selected.map((u) => u.id || u.userId || ""),
+                    })
+                  }
+                  placeholder="Search to add team members..."
+                  label="Team members"
                 />
               </div>
             </div>
