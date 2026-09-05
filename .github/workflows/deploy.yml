@@ -244,11 +244,21 @@ jobs:
           USER="${SERVER_USER:-root}"
           ssh -o StrictHostKeyChecking=no "${USER}@${HOST}" bash << 'ENDSSH'
             set -euo pipefail
+            check_url() {
+              local url="$1" name="$2"
+              for attempt in 1 2 3 4 5; do
+                if curl -sf -o /dev/null "$url"; then
+                  echo "${name} check passed: ${url}"
+                  return 0
+                fi
+                echo "${name} check attempt ${attempt}/5 failed, retrying..."
+                sleep 6
+              done
+              echo "${name} check failed: ${url}"
+              return 1
+            }
             sleep 8
-            echo "Backend check:"
-            curl -sf http://localhost:8000/health/simple || { echo "Backend health check failed"; exit 1; }
-            echo
-            echo "Frontend check:"
-            curl -sf -o /dev/null http://localhost:3000/ || { echo "Frontend check failed"; exit 1; }
+            check_url http://localhost:8000/health/simple "Backend"
+            check_url http://localhost:3000/ "Frontend"
             echo "All checks passed"
           ENDSSH

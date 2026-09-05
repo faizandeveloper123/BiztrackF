@@ -1,3 +1,4 @@
+// PM2 apps use default pm2 logs (~/.pm2/logs) so rebuilds can't break spawning.
 module.exports = {
   apps: [
     {
