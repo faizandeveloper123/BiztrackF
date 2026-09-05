@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+out/
+dist/
+
+# Environment files
+.env*
+
+# Config files
+next.config.js
+tailwind.config.js
+postcss.config.js
+
+# Generated files
+*.d.ts

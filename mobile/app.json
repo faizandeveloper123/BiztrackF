@@ -1,0 +1,73 @@
+{
+  "expo": {
+    "name": "BizTrack",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow BizTrack to scan product QR codes and barcodes."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "softwareKeyboardLayoutMode": "resize",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "package": "com.xmaan1.mobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow BizTrack to choose photos for customer profiles."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow BizTrack to scan product QR codes and barcodes."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#4f46e5",
+          "defaultChannel": "default"
+        }
+      ],
+      "expo-sharing"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5f25ccf5-3dcb-46f9-9aef-3fb37633cd77"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/5f25ccf5-3dcb-46f9-9aef-3fb37633cd77"
+    }
+  }
+}

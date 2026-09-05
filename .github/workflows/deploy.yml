@@ -1,0 +1,269 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'ecosystem.config.js'
+              - 'scripts/ensure-uv.sh'
+              - 'scripts/deploy-backend-uv.sh'
+              - 'scripts/run-migrations.sh'
+            frontend:
+              - 'frontend/**'
+            migrations:
+              - 'backend/alembic/versions/**'
+              - '!backend/alembic/versions/.gitkeep'
+              - 'scripts/run-migrations.sh'
+
+  sync-code:
+    runs-on: ubuntu-latest
+    needs: check-changes
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "❌ Error: SSH_PRIVATE_KEY secret is not configured"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SERVER_HOST }}" ]; then
+            echo "❌ Error: SERVER_HOST secret is not configured"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SERVER_USER }}" ]; then
+            echo "❌ Error: SERVER_USER secret is not configured"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DEPLOY_PATH }}" ]; then
+            echo "❌ Error: DEPLOY_PATH secret is not configured"
+            exit 1
+          fi
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Sync code to server
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          GITHUB_REPO: ${{ github.repository }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_HOST} "DEPLOY_PATH='${DEPLOY_PATH}' GITHUB_REPO='${GITHUB_REPO}' bash" << 'ENDSSH'
+            set -e
+            REPO_URL="git@github.com:${GITHUB_REPO}.git"
+            if [ ! -d "${DEPLOY_PATH}" ]; then
+              echo "Directory does not exist. Cloning repository..."
+              PARENT_DIR=$(dirname "${DEPLOY_PATH}")
+              mkdir -p "${PARENT_DIR}"
+              git clone ${REPO_URL} ${DEPLOY_PATH}
+              cd ${DEPLOY_PATH}
+              git checkout main
+            elif [ ! -d "${DEPLOY_PATH}/.git" ]; then
+              echo "Directory exists but is not a git repository. Removing and cloning..."
+              rm -rf ${DEPLOY_PATH}
+              PARENT_DIR=$(dirname "${DEPLOY_PATH}")
+              mkdir -p "${PARENT_DIR}"
+              git clone ${REPO_URL} ${DEPLOY_PATH}
+              cd ${DEPLOY_PATH}
+              git checkout main
+            else
+              echo "Pulling latest changes..."
+              cd ${DEPLOY_PATH}
+              git fetch origin
+              git reset --hard origin/main
+            fi
+          ENDSSH
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: [check-changes, sync-code]
+    if: needs.check-changes.outputs.backend == 'true'
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy backend
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_HOST} "DEPLOY_PATH='${DEPLOY_PATH}' bash" << 'ENDSSH'
+            set -euo pipefail
+            export PATH="${HOME}/.local/bin:${PATH}"
+            if ! command -v uv >/dev/null 2>&1; then
+              echo "Installing uv..."
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              export PATH="${HOME}/.local/bin:${PATH}"
+            fi
+            echo "🚀 Setting up backend with uv..."
+            cd "${DEPLOY_PATH}/backend"
+            uv python install
+            uv sync --frozen --no-dev
+            echo "✅ Backend setup completed successfully!"
+          ENDSSH
+
+  run-migrations:
+    runs-on: ubuntu-latest
+    needs: [check-changes, sync-code, deploy-backend]
+    if: needs.check-changes.outputs.migrations == 'true'
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Run Alembic migrations
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_HOST} "DEPLOY_PATH='${DEPLOY_PATH}' bash" << 'ENDSSH'
+            set -euo pipefail
+            export PATH="${HOME}/.local/bin:${PATH}"
+            echo "🔄 Running Alembic migrations..."
+            bash "${DEPLOY_PATH}/scripts/run-migrations.sh" "${DEPLOY_PATH}/backend"
+            echo "✅ Migrations completed successfully!"
+          ENDSSH
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: [check-changes, sync-code]
+    if: needs.check-changes.outputs.frontend == 'true'
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy frontend
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_HOST} "DEPLOY_PATH='${DEPLOY_PATH}' bash" << 'ENDSSH'
+            set -euo pipefail
+            echo "🚀 Setting up frontend..."
+            cd "${DEPLOY_PATH}/frontend"
+            echo "Installing dependencies..."
+            npm ci
+            echo "Building frontend..."
+            npm run build
+            echo "Preparing standalone static assets..."
+            node scripts/prepare-standalone.js
+            if [ ! -d .next/standalone/.next/static ]; then
+              echo "❌ Missing .next/standalone/.next/static after prepare-standalone"
+              exit 1
+            fi
+            if [ ! -d .next/standalone/public ]; then
+              echo "❌ Missing .next/standalone/public after prepare-standalone"
+              exit 1
+            fi
+            echo "✅ Frontend setup completed successfully!"
+          ENDSSH
+
+  restart-services:
+    runs-on: ubuntu-latest
+    needs: [check-changes, sync-code, deploy-backend, run-migrations, deploy-frontend]
+    if: |
+      always() &&
+      needs.check-changes.result == 'success' &&
+      (needs.check-changes.outputs.backend == 'true' || needs.check-changes.outputs.frontend == 'true') &&
+      (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') &&
+      (needs.run-migrations.result == 'success' || needs.run-migrations.result == 'skipped') &&
+      (needs.deploy-frontend.result == 'success' || needs.deploy-frontend.result == 'skipped')
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Restart PM2 services
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_HOST} "DEPLOY_PATH='${DEPLOY_PATH}' bash" << 'ENDSSH'
+            set -euo pipefail
+            export PATH="${HOME}/.local/bin:${PATH}"
+            echo "🔄 Restarting PM2 processes..."
+            cd "${DEPLOY_PATH}"
+            pm2 delete biztrack-backend biztrack-frontend 2>/dev/null || true
+            pm2 start ecosystem.config.js --update-env
+            if [ $? -ne 0 ]; then
+              echo "❌ Error: Failed to start PM2 processes"
+              exit 1
+            fi
+            pm2 save
+            echo "✅ Services restarted successfully!"
+          ENDSSH
+
+  health-check:
+    runs-on: ubuntu-latest
+    needs: [check-changes, restart-services]
+    if: |
+      needs.check-changes.outputs.backend == 'true' &&
+      needs.restart-services.result == 'success'
+    env:
+      BACKEND_URL: ${{ secrets.BACKEND_URL }}
+    steps:
+      - name: Health check
+        run: |
+          echo "Waiting for services to be ready..."
+          sleep 10
+          echo "Checking backend health..."
+          if ! curl -f ${BACKEND_URL}/health; then
+            echo "❌ Health check failed: Backend is not responding"
+            exit 1
+          fi
+          echo "✅ Health check passed: Backend is healthy"
+

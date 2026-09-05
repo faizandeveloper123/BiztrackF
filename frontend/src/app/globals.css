@@ -1,0 +1,242 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* React DatePicker Custom Styles */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: inherit;
+  width: 200px;
+}
+
+.react-datepicker {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.react-datepicker__header {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 8px 8px 0 0;
+}
+
+.react-datepicker__day--selected {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.react-datepicker__day--in-selecting-range {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.react-datepicker__day--in-range {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.react-datepicker__day:hover {
+  background-color: #f3f4f6;
+}
+
+.react-datepicker__day--disabled,
+.react-datepicker__day--disabled:hover {
+  color: #9ca3af;
+  background-color: transparent;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.mot-booking-datepicker .react-datepicker__day--disabled,
+.mot-booking-datepicker .react-datepicker__day--disabled:hover {
+  opacity: 0.45;
+}
+
+/* Modern, stable scrollbars for select/combobox dropdowns */
+.radix-select-viewport {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+.radix-select-viewport::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.radix-select-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.radix-select-viewport::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+  border-radius: 9999px;
+}
+
+.radix-select-viewport::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground));
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+    --font-inter: "Inter", sans-serif;
+    --font-jetbrains-mono: "JetBrains Mono", monospace;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: var(--font-inter);
+  }
+}
+
+/* Mobile responsiveness safety net */
+html,
+body {
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.desktop-app,
+html.desktop-app body {
+  overscroll-behavior: none;
+}
+
+html.desktop-app,
+html.desktop-app body,
+html.desktop-app #__next {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html.desktop-app input,
+html.desktop-app textarea,
+html.desktop-app [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+@layer components {
+  .glass-effect {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+
+  .gradient-primary {
+    @apply bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700;
+  }
+
+  .gradient-secondary {
+    @apply bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500;
+  }
+
+  .gradient-success {
+    @apply bg-gradient-to-br from-green-400 to-blue-500;
+  }
+
+  .gradient-warning {
+    @apply bg-gradient-to-br from-yellow-400 to-orange-500;
+  }
+
+  .gradient-danger {
+    @apply bg-gradient-to-br from-red-400 to-pink-600;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .modern-card {
+    @apply bg-white/80 backdrop-blur-sm border border-gray-200/50 rounded-xl shadow-lg;
+  }
+
+  .modern-button {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg;
+  }
+
+  .instagram-gradient {
+    @apply bg-gradient-to-br from-purple-600 via-pink-600 to-orange-400;
+  }
+
+  .facebook-gradient {
+    @apply bg-gradient-to-br from-blue-600 to-blue-800;
+  }
+
+  .modern-glass {
+    @apply bg-white/20 backdrop-blur-lg border border-white/30 shadow-xl;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

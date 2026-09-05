@@ -1,0 +1,14 @@
+.vscode
+*.pem
+*.ppk
+*.md
+idea/
+service-account.json
+client_secrets.json
+.env
+*.env
+!*.env.example
+*.log
+backups/
+.venv/
+.uv-cache/

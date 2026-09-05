@@ -1,0 +1,14 @@
+{
+  "name": "biztrack-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "prepare-next": "powershell -ExecutionPolicy Bypass -File ./scripts/prepare-next.ps1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.10.1"
+  }
+}

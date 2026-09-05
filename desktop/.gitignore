@@ -1,0 +1,5 @@
+node_modules
+src-tauri/bundled
+src-tauri/target
+src-tauri/gen
+app-icon.png

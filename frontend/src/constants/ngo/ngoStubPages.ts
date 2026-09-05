@@ -1,0 +1,18 @@
+export const NGO_STUB_PAGE_TITLES: Record<string, string> = {
+  "gift-opportunities": "Gift Opportunities",
+  "donation-receipts": "Donation Receipts",
+  "contribution-agreements": "Contribution Agreements",
+  "donation-installments": "Donation Installments",
+  inventory: "Inventory Dashboard",
+  "gift-items": "Gift Items",
+  "stock-alerts": "Stock Alerts",
+  volunteers: "All Volunteers",
+  "leave-management": "Leave Management",
+  "relief-projects": "Active Relief Projects",
+  "project-tasks": "Project Tasks",
+  reports: "Charity Reports",
+  banking: "Charity Banking Dashboard",
+  "donation-transactions": "Donation Transactions",
+  ledger: "Fund Accounting — Ledger Dashboard",
+  "zakat-funds": "Zakat Funds",
+};

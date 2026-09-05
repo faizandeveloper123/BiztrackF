@@ -1,0 +1,14 @@
+{
+  "identifier": "default",
+  "description": "BizTrack main window including Next.js over HTTP",
+  "windows": ["main"],
+  "remote": {
+    "urls": [
+      "http://localhost:3000",
+      "http://localhost:3000/*",
+      "http://127.0.0.1:38447",
+      "http://127.0.0.1:38447/*"
+    ]
+  },
+  "permissions": ["core:default"]
+}
