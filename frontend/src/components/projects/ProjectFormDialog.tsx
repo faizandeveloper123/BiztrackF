@@ -1,5 +1,7 @@
 "use client";
 
+import React, { useState } from "react";
+import { Plus, User, X } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
@@ -11,11 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/src/components/ui/dialog";
-import { UserSearch } from "@/src/components/ui/user-search";
-import { UserMultiSearch } from "@/src/components/ui/user-multi-search";
 import { cn } from "@/src/lib/utils";
 import { projectDateKey } from "@/src/utils/projects";
 import type { ProjectFormDialogProps } from "@/src/types/projects";
+import { UserAssignDialog, type UserAssignItem } from "./UserAssignDialog";
 
 const selectClassName = cn(
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm",
@@ -35,6 +36,17 @@ export function ProjectFormDialog({
   onFormDataChange,
   onSubmit,
 }: ProjectFormDialogProps) {
+  const [assignOpen, setAssignOpen] = useState<"pm" | "team" | null>(null);
+
+  const getUserId = (user: UserAssignItem) => user.id || user.userId || "";
+
+  const getDisplayName = (user: UserAssignItem) => {
+    if (user.firstName || user.lastName) {
+      return [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+    }
+    return user.userName || user.email || "Unknown";
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -187,38 +199,105 @@ export function ProjectFormDialog({
                 />
               </div>
               <div className="space-y-2">
-                <UserSearch
-                  users={users}
-                  value={selectedProjectManager}
-                  onSelect={(user) =>
-                    onFormDataChange({
-                      ...formData,
-                      projectManagerId: user ? user.id || user.userId || "" : "",
-                    })
-                  }
-                  placeholder="Search by name or email..."
-                  label="Project manager *"
-                  required
-                  error={
-                    formError === "Please select a project manager"
-                      ? formError
-                      : undefined
-                  }
-                />
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="project-form-pm">
+                    Project manager <span className="text-red-500">*</span>
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 px-2 text-xs text-indigo-600"
+                    onClick={() => setAssignOpen("pm")}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {selectedProjectManager ? "Change" : "Add"}
+                  </Button>
+                </div>
+                {selectedProjectManager ? (
+                  <div className="flex items-center justify-between rounded-md border bg-gray-50 px-3 py-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <User className="h-4 w-4 shrink-0 text-gray-500" />
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium text-slate-900">
+                          {getDisplayName(selectedProjectManager)}
+                        </div>
+                        {selectedProjectManager.email && (
+                          <div className="truncate text-xs text-gray-500">
+                            {selectedProjectManager.email}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 shrink-0 p-0"
+                      onClick={() =>
+                        onFormDataChange({ ...formData, projectManagerId: "" })
+                      }
+                      aria-label="Remove project manager"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="rounded-md border border-dashed px-3 py-2 text-xs text-gray-400">
+                    Click Add to assign a project manager.
+                  </p>
+                )}
+                {formError === "Please select a project manager" ? (
+                  <p className="text-sm text-red-500">{formError}</p>
+                ) : null}
               </div>
               <div className="space-y-2 md:col-span-2">
-                <UserMultiSearch
-                  users={users}
-                  value={selectedTeamMembers}
-                  onChange={(selected) =>
-                    onFormDataChange({
-                      ...formData,
-                      teamMemberIds: selected.map((u) => u.id || u.userId || ""),
-                    })
-                  }
-                  placeholder="Search to add team members..."
-                  label="Team members"
-                />
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="project-form-team">Team members</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 px-2 text-xs text-indigo-600"
+                    onClick={() => setAssignOpen("team")}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {selectedTeamMembers.length > 0 ? "Add more" : "Add"}
+                  </Button>
+                </div>
+                {selectedTeamMembers.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTeamMembers.map((member) => (
+                      <span
+                        key={getUserId(member)}
+                        className="inline-flex items-center gap-1.5 rounded-full border bg-gray-50 py-1 pl-3 pr-1 text-sm text-slate-800"
+                      >
+                        {getDisplayName(member)}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 rounded-full p-0"
+                          onClick={() =>
+                            onFormDataChange({
+                              ...formData,
+                              teamMemberIds: formData.teamMemberIds.filter(
+                                (id) => id !== getUserId(member),
+                              ),
+                            })
+                          }
+                          aria-label="Remove team member"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-md border border-dashed px-3 py-2 text-xs text-gray-400">
+                    Click Add to choose team members.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -245,6 +324,39 @@ export function ProjectFormDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+      {assignOpen && (
+        <UserAssignDialog
+          open={assignOpen !== null}
+          onOpenChange={() => setAssignOpen(null)}
+          title={assignOpen === "pm" ? "Assign Project Manager" : "Add Team Members"}
+          confirmLabel={
+            assignOpen === "pm" ? "Assign" : "Add selected"
+          }
+          mode={assignOpen}
+          users={users as UserAssignItem[]}
+          initialSelectedIds={
+            assignOpen === "pm"
+              ? formData.projectManagerId
+                ? [formData.projectManagerId]
+                : []
+              : formData.teamMemberIds
+          }
+          onConfirm={(selected) => {
+            if (assignOpen === "pm") {
+              const pm = selected[0];
+              onFormDataChange({
+                ...formData,
+                projectManagerId: pm ? pm.id || pm.userId || "" : "",
+              });
+            } else {
+              onFormDataChange({
+                ...formData,
+                teamMemberIds: selected.map((u) => u.id || u.userId || ""),
+              });
+            }
+          }}
+        />
+      )}
     </Dialog>
   );
 }
