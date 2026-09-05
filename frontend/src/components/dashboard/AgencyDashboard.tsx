@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -11,6 +11,7 @@ import {
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
+import { ProjectCreateDialog } from "../projects/ProjectCreateDialog";
 import {
   Briefcase,
   Users,
@@ -80,6 +81,8 @@ export default function AgencyDashboard({
   stats,
   onNavigate,
 }: AgencyDashboardProps) {
+  const [createOpen, setCreateOpen] = useState(false);
+
   const completionRate =
     stats.totalProjects > 0
       ? Math.round((stats.completedProjects / stats.totalProjects) * 100)
@@ -109,7 +112,7 @@ export default function AgencyDashboard({
         </div>
         <div className="flex flex-wrap gap-3">
           <Button
-            onClick={() => onNavigate("/projects")}
+            onClick={() => setCreateOpen(true)}
             className="bg-indigo-600 hover:bg-indigo-700"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -227,7 +230,7 @@ export default function AgencyDashboard({
                   Create a project to start tracking client delivery.
                 </p>
                 <Button
-                  onClick={() => onNavigate("/projects")}
+                  onClick={() => setCreateOpen(true)}
                   className="mt-4 bg-indigo-600 hover:bg-indigo-700"
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -399,6 +402,11 @@ export default function AgencyDashboard({
           </div>
         </CardContent>
       </Card>
+
+      <ProjectCreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
     </div>
   );
 }
