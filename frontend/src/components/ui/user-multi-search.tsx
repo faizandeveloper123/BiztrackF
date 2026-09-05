@@ -6,7 +6,7 @@ import { Label } from "./label";
 import { Button } from "./button";
 import { Badge } from "./badge";
 import { Card, CardContent } from "./card";
-import { Search, User, X } from "lucide-react";
+import { Search, User, X, Plus } from "lucide-react";
 
 export interface UserMultiSearchItem {
   id?: string;
@@ -107,7 +107,19 @@ export function UserMultiSearch({
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
           disabled={disabled}
+          className={disabled ? "" : "pr-10"}
         />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+          disabled={disabled}
+          onClick={() => setIsOpen(true)}
+          aria-label="Add team members"
+        >
+          <Plus className="h-4 w-4 text-gray-500" />
+        </Button>
       </div>
       {isOpen && (
         <Card className="absolute z-[110] w-full mt-1 max-h-60 overflow-y-auto shadow-lg border">
