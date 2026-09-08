@@ -45,12 +45,14 @@ def _send_customer_whatsapp(jc, subject: str = "created", db: Optional[Session] 
             )
             if custom is not None:
                 success, _, error = custom
-                if not success and error:
+                if success:
+                    return
+                if error:
                     import logging
                     logging.getLogger(__name__).warning(
                         "WhatsApp custom template send failed for job card %s: %s", jc.id, error
                     )
-                return
+                # fall through to approved template path
         except Exception:
             import logging
             logging.getLogger(__name__).exception(

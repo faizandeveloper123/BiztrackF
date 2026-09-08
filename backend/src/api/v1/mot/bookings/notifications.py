@@ -294,9 +294,11 @@ def _send_confirmation_whatsapp(db: Session, booking: MotBooking, branding: Dict
         )
         if custom is not None:
             success, _, error = custom
-            if not success and error:
+            if success:
+                return True
+            if error:
                 logger.warning("MOT WhatsApp custom template confirmation failed for %s: %s", booking.id, error)
-            return success
+            # fall through to approved template path
     except Exception as exc:
         logger.warning("MOT WhatsApp custom template confirmation error for %s: %s", booking.id, exc)
 
@@ -506,9 +508,11 @@ def _send_due_reminder_whatsapp(
         )
         if custom is not None:
             success, _, error = custom
-            if not success and error:
+            if success:
+                return True
+            if error:
                 logger.warning("MOT WhatsApp custom template reminder failed for %s: %s", booking.id, error)
-            return success
+            # fall through to approved template path
     except Exception as exc:
         logger.warning("MOT WhatsApp custom template reminder error for %s: %s", booking.id, exc)
 
@@ -556,9 +560,11 @@ def _send_cancellation_whatsapp(db: Session, booking: MotBooking, branding: Dict
         )
         if custom is not None:
             success, _, error = custom
-            if not success and error:
+            if success:
+                return True
+            if error:
                 logger.warning("MOT WhatsApp custom template cancellation failed for %s: %s", booking.id, error)
-            return success
+            # fall through to approved template path
     except Exception as exc:
         logger.warning("MOT WhatsApp custom template cancellation error for %s: %s", booking.id, exc)
 
@@ -611,9 +617,11 @@ def _send_expired_whatsapp(db: Session, booking: MotBooking, branding: Dict[str,
         )
         if custom is not None:
             success, _, error = custom
-            if not success and error:
+            if success:
+                return True
+            if error:
                 logger.warning("MOT WhatsApp custom template expired failed for %s: %s", booking.id, error)
-            return success
+            # fall through to approved template path
     except Exception as exc:
         logger.warning("MOT WhatsApp custom template expired error for %s: %s", booking.id, exc)
 
