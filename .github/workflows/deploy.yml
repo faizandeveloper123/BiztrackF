@@ -102,12 +102,16 @@ jobs:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           BOTLINKD_APP_KEY: ${{ secrets.BOTLINKD_APP_KEY }}
           BOTLINKD_AUTH_KEY: ${{ secrets.BOTLINKD_AUTH_KEY }}
+          BOTLINKD_TEMPLATE_LANGUAGE: ${{ secrets.BOTLINKD_TEMPLATE_LANGUAGE }}
+          BOTLINKD_JOB_CARD_TEMPLATE: ${{ secrets.BOTLINKD_JOB_CARD_TEMPLATE }}
+          BOTLINKD_MOT_CONFIRMATION_TEMPLATE: ${{ secrets.BOTLINKD_MOT_CONFIRMATION_TEMPLATE }}
+          BOTLINKD_MOT_REMINDER_TEMPLATE: ${{ secrets.BOTLINKD_MOT_REMINDER_TEMPLATE }}
         run: |
           set -e
           HOST="${SERVER_HOST:-81.17.101.93}"
           USER="${SERVER_USER:-root}"
           TARGET="${DEPLOY_PATH:-/opt/biztrack}"
-          ssh -o StrictHostKeyChecking=no "${USER}@${HOST}" "TARGET='${TARGET}' APP='${BOTLINKD_APP_KEY}' AUTH='${BOTLINKD_AUTH_KEY}' bash" << 'ENDSSH'
+          ssh -o StrictHostKeyChecking=no "${USER}@${HOST}" "TARGET='${TARGET}' APP='${BOTLINKD_APP_KEY}' AUTH='${BOTLINKD_AUTH_KEY}' LANG_CODE='${BOTLINKD_TEMPLATE_LANGUAGE}' JC_TMPL='${BOTLINKD_JOB_CARD_TEMPLATE}' MOT_CONF_TMPL='${BOTLINKD_MOT_CONFIRMATION_TEMPLATE}' MOT_REM_TMPL='${BOTLINKD_MOT_REMINDER_TEMPLATE}' bash" << 'ENDSSH'
             set -euo pipefail
             ENV_FILE="${TARGET}/backend/.env"
             if [ ! -f "${ENV_FILE}" ]; then
@@ -118,12 +122,18 @@ jobs:
               local KEY="$1" VALUE="$2"
               if grep -q "^${KEY}=" "${ENV_FILE}"; then
                 sed -i "s|^${KEY}=.*|${KEY}=${VALUE}|" "${ENV_FILE}"
-              else
+              elif [ -n "${VALUE}" ]; then
                 printf '\n%s=%s\n' "${KEY}" "${VALUE}" >> "${ENV_FILE}"
               fi
             }
             upsert_key BOTLINKD_APP_KEY "${APP}"
             upsert_key BOTLINKD_AUTH_KEY "${AUTH}"
+            if [ -n "${LANG_CODE}" ]; then
+              upsert_key BOTLINKD_TEMPLATE_LANGUAGE "${LANG_CODE}"
+            fi
+            upsert_key BOTLINKD_JOB_CARD_TEMPLATE "${JC_TMPL}"
+            upsert_key BOTLINKD_MOT_CONFIRMATION_TEMPLATE "${MOT_CONF_TMPL}"
+            upsert_key BOTLINKD_MOT_REMINDER_TEMPLATE "${MOT_REM_TMPL}"
             echo "BotLinkd env vars configured in ${ENV_FILE}"
           ENDSSH
 

@@ -283,8 +283,36 @@ def _send_confirmation_whatsapp(db: Session, booking: MotBooking, branding: Dict
     if not phone:
         return False
     try:
+        import os
         from .....services.whatsapp_service import whatsapp_service
         from .....services.whatsapp_messages import build_mot_confirmation_message
+
+        template = (os.getenv("BOTLINKD_MOT_CONFIRMATION_TEMPLATE") or "").strip()
+        if template:
+            ref = str(booking.id).replace("-", "").upper()[:8]
+            booking_date = ""
+            if booking.booking_date:
+                try:
+                    booking_date = booking.booking_date.strftime("%d/%m/%Y")
+                except Exception:
+                    booking_date = str(booking.booking_date)
+            params = [
+                booking.customer_name or "Customer",
+                _vehicle_line(booking),
+                booking_date,
+                f"{booking.start_time} – {booking.end_time}",
+                ref,
+            ]
+            success, _, error = whatsapp_service.send_template_message(
+                phone,
+                template=template,
+                language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
+                body_params=params,
+            )
+            if not success and error:
+                logger.warning("MOT WhatsApp template confirmation failed for %s: %s", booking.id, error)
+            return success
+
         message = build_mot_confirmation_message(booking, branding)
         success, _, error = whatsapp_service.send_message(phone, message)
         if not success and error:
@@ -462,8 +490,36 @@ def _send_due_reminder_whatsapp(
     if not phone:
         return False
     try:
+        import os
         from .....services.whatsapp_service import whatsapp_service
         from .....services.whatsapp_messages import build_mot_due_reminder_message
+
+        template = (os.getenv("BOTLINKD_MOT_REMINDER_TEMPLATE") or "").strip()
+        if template:
+            ref = str(booking.id).replace("-", "").upper()[:8]
+            due_str = ""
+            if booking.mot_expiry_date:
+                try:
+                    due_str = booking.mot_expiry_date.strftime("%d/%m/%Y")
+                except Exception:
+                    due_str = str(booking.mot_expiry_date)
+            params = [
+                booking.customer_name or "Customer",
+                _vehicle_line(booking),
+                due_str,
+                str(days_left),
+                ref,
+            ]
+            success, _, error = whatsapp_service.send_template_message(
+                phone,
+                template=template,
+                language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
+                body_params=params,
+            )
+            if not success and error:
+                logger.warning("MOT WhatsApp template reminder failed for %s: %s", booking.id, error)
+            return success
+
         message = build_mot_due_reminder_message(booking, branding, days_left)
         success, _, error = whatsapp_service.send_message(phone, message)
         if not success and error:

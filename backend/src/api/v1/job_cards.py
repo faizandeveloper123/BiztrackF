@@ -27,8 +27,38 @@ def _send_customer_whatsapp(jc, subject: str = "created") -> None:
     if not phone:
         return
     try:
+        import os
         from ...services.whatsapp_service import whatsapp_service
         from ...services.whatsapp_messages import build_job_card_message
+
+        template = (os.getenv("BOTLINKD_JOB_CARD_TEMPLATE") or "").strip()
+        if template:
+            vehicle = "your vehicle"
+            vi = getattr(jc, "vehicle_info", None) or {}
+            parts = [vi.get("make"), vi.get("model"), vi.get("registration_number")]
+            cleaned = [str(p).strip() for p in parts if p and str(p).strip()]
+            if cleaned:
+                vehicle = " ".join(cleaned)
+            params = [
+                getattr(jc, "customer_name", "") or "Customer",
+                getattr(jc, "job_card_number", "") or "",
+                getattr(jc, "title", "") or "",
+                getattr(jc, "status", "") or "",
+                vehicle,
+            ]
+            success, _, error = whatsapp_service.send_template_message(
+                phone,
+                template=template,
+                language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
+                body_params=params,
+            )
+            if not success and error:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "WhatsApp template send failed for job card %s: %s", jc.id, error
+                )
+            return
+
         message = build_job_card_message(jc, subject=subject)
         success, _, error = whatsapp_service.send_message(phone, message)
         if not success and error:
