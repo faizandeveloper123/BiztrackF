@@ -1,9 +1,12 @@
 "use client";
 
+import { useCallback } from "react";
+import { toast } from "sonner";
 import { DashboardLayout } from "@/src/components/layout";
 import { useCurrency } from "@/src/contexts/CurrencyContext";
 import { PermissionGuard } from "@/src/components/guards/PermissionGuard";
 import { useMotBookingsPage } from "@/src/hooks/useMotBookingsPage";
+import { apiService } from "@/src/services/ApiService";
 import { MotBookingsLoadingState } from "@/src/components/mot-bookings/MotBookingsLoadingState";
 import { MotBookingsPageHeader } from "@/src/components/mot-bookings/MotBookingsPageHeader";
 import { MotSettingsCard } from "@/src/components/mot-bookings/MotSettingsCard";
@@ -13,10 +16,30 @@ import { MotBookingsListCard } from "@/src/components/mot-bookings/MotBookingsLi
 import { MotBookingFormDialog } from "@/src/components/mot-bookings/MotBookingFormDialog";
 import { MotBookingViewDialog } from "@/src/components/mot-bookings/MotBookingViewDialog";
 import { MotBookingDeleteDialog } from "@/src/components/mot-bookings/MotBookingDeleteDialog";
+import type { MotBooking } from "@/src/models/mot/MotBooking";
 
 function MotManageBookingsContent() {
   const { formatCurrency } = useCurrency();
   const page = useMotBookingsPage();
+
+  const handleSendWhatsApp = useCallback(
+    async (booking: MotBooking) => {
+      if (!booking.customer_phone) {
+        toast.error("This booking has no customer phone number");
+        return;
+      }
+      try {
+        await apiService.post(`/mot/bookings/${booking.id}/send-whatsapp`, {});
+        toast.success("WhatsApp message sent to customer");
+      } catch (err) {
+        const message =
+          (err as { response?: { data?: { detail?: string } } })?.response
+            ?.data?.detail || "Failed to send WhatsApp message";
+        toast.error(message);
+      }
+    },
+    [],
+  );
 
   if (page.loading) {
     return <MotBookingsLoadingState />;
@@ -49,6 +72,7 @@ function MotManageBookingsContent() {
           onEdit={page.handleEdit}
           onDelete={page.handleDeleteClick}
           onStatusChange={page.handleStatusChange}
+          onSendWhatsApp={handleSendWhatsApp}
         />
 
         <MotBookingFormDialog

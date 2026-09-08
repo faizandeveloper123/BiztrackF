@@ -21,6 +21,28 @@ from ...config.job_card_crud import (
 router = APIRouter(prefix="/job-cards", tags=["Job Cards"])
 
 
+def _send_customer_whatsapp(jc, subject: str = "created") -> None:
+    """Best-effort WhatsApp notification to the job card customer."""
+    phone = getattr(jc, "customer_phone", None)
+    if not phone:
+        return
+    try:
+        from ...services.whatsapp_service import whatsapp_service
+        from ...services.whatsapp_messages import build_job_card_message
+        message = build_job_card_message(jc, subject=subject)
+        success, _, error = whatsapp_service.send_message(phone, message)
+        if not success and error:
+            import logging
+            logging.getLogger(__name__).warning(
+                "WhatsApp send failed for job card %s: %s", jc.id, error
+            )
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception(
+            "Unexpected error while sending WhatsApp for job card %s", getattr(jc, "id", None)
+        )
+
+
 def _job_card_to_response(jc) -> JobCardResponse:
     assigned_to_name = None
     if getattr(jc, "assigned_to", None):
@@ -173,7 +195,38 @@ def create_job_card_endpoint(
                 )
         except Exception:
             pass
+    _send_customer_whatsapp(jc, subject="completed" if jc.status == "completed" else "created")
     return _job_card_to_response(jc)
+
+
+@router.post("/{job_card_id}/send-whatsapp")
+def send_job_card_whatsapp(
+    job_card_id: str,
+    message: Optional[str] = Query(None, description="Optional custom message"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    tenant_context: dict = Depends(get_tenant_context),
+):
+    tenant_id = str(tenant_context["tenant_id"])
+    jc = get_job_card_by_id(job_card_id, db, tenant_id)
+    if not jc:
+        raise HTTPException(status_code=404, detail="Job card not found")
+    if not jc.customer_phone:
+        raise HTTPException(status_code=400, detail="Job card has no customer phone number")
+
+    from ...services.whatsapp_service import whatsapp_service
+    from ...services.whatsapp_messages import build_job_card_message
+
+    body = message or build_job_card_message(jc, subject="status")
+    success, provider_status, error = whatsapp_service.send_message(jc.customer_phone, body)
+    if not success:
+        raise HTTPException(status_code=502, detail=error or "WhatsApp send failed")
+    return {
+        "message": "WhatsApp message sent successfully",
+        "to": jc.customer_phone,
+        "job_card_number": jc.job_card_number,
+        "provider_status": provider_status,
+    }
 
 
 @router.put("/{job_card_id}", response_model=JobCardResponse)
@@ -188,6 +241,7 @@ def update_job_card_endpoint(
     jc = get_job_card_by_id(job_card_id, db, tenant_id)
     if not jc:
         raise HTTPException(status_code=404, detail="Job card not found")
+    previous_status = getattr(jc, "status", None)
     data = body.model_dump(exclude_unset=True)
     if data.get("planned_date") and isinstance(data["planned_date"], str):
         data["planned_date"] = datetime.fromisoformat(data["planned_date"].replace("Z", "+00:00"))
@@ -232,6 +286,10 @@ def update_job_card_endpoint(
                 )
         except Exception:
             pass
+    status_changed = "status" in data and data.get("status") is not None and data.get("status") != previous_status
+    if status_changed:
+        subject = "completed" if jc.status == "completed" else "status"
+        _send_customer_whatsapp(jc, subject=subject)
     return _job_card_to_response(jc)
 
 

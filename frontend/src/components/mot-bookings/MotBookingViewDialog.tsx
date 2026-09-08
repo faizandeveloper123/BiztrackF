@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
+import { toast } from "sonner";
+import { apiService } from "@/src/services/ApiService";
 import { useAuth } from "@/src/contexts/AuthContext";
 import {
   Dialog,
@@ -56,6 +60,7 @@ export function MotBookingViewDialog({
   onEdit,
 }: MotBookingViewDialogProps) {
   const { currentTenant } = useAuth();
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const confirmationPath =
     booking && currentTenant?.domain
       ? `/${currentTenant.domain}/mot/bookings/${booking.id}/confirmation`
@@ -81,6 +86,26 @@ export function MotBookingViewDialog({
   const customerName = [customer.title, customer.firstName, customer.lastName]
     .filter(Boolean)
     .join(" ");
+
+  const handleSendWhatsApp = async () => {
+    if (!booking) return;
+    if (!booking.customer_phone) {
+      toast.error("This booking has no customer phone number");
+      return;
+    }
+    setSendingWhatsApp(true);
+    try {
+      await apiService.post(`/mot/bookings/${booking.id}/send-whatsapp`, {});
+      toast.success("WhatsApp message sent to customer");
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Failed to send WhatsApp message";
+      toast.error(message);
+    } finally {
+      setSendingWhatsApp(false);
+    }
+  };
 
   return (
     <Dialog open={!!booking} onOpenChange={(open) => !open && onClose()}>
@@ -224,6 +249,17 @@ export function MotBookingViewDialog({
                   <Link href={confirmationPath} target="_blank">
                     Open confirmation
                   </Link>
+                </Button>
+              )}
+              {booking.customer_phone && (
+                <Button
+                  variant="outline"
+                  className="text-green-700"
+                  onClick={handleSendWhatsApp}
+                  disabled={sendingWhatsApp}
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  {sendingWhatsApp ? "Sending..." : "Send WhatsApp"}
                 </Button>
               )}
               <Button variant="outline" onClick={onClose}>

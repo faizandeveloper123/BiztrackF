@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   Edit,
   Eye,
+  MessageCircle,
   MoreVertical,
   PlayCircle,
   Plus,
@@ -57,6 +58,7 @@ type MotBookingsListCardProps = {
   onEdit: (booking: MotBooking) => void;
   onDelete: (booking: MotBooking) => void;
   onStatusChange: (booking: MotBooking, status: MotBookingStatus) => void;
+  onSendWhatsApp: (booking: MotBooking) => void;
 };
 
 export function MotBookingsListCard({
@@ -69,6 +71,7 @@ export function MotBookingsListCard({
   onEdit,
   onDelete,
   onStatusChange,
+  onSendWhatsApp,
 }: MotBookingsListCardProps) {
   const hasActiveFilters =
     filters.searchTerm ||
@@ -200,6 +203,13 @@ export function MotBookingsListCard({
                           Cancel booking
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-green-700"
+                          onClick={() => onSendWhatsApp(booking)}
+                        >
+                          <MessageCircle className="mr-2 h-4 w-4" />
+                          Send WhatsApp
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"
                           onClick={() => onDelete(booking)}

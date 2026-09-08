@@ -253,6 +253,38 @@ async def update_mot_booking_status_admin(
     return booking_logic.update_mot_booking_status(booking_id, body, db, tenant_context["tenant_id"])
 
 
+@admin_router.post("/bookings/{booking_id}/send-whatsapp")
+async def send_mot_booking_whatsapp(
+    booking_id: str,
+    message: Optional[str] = Query(None, description="Optional custom message"),
+    db: Session = Depends(get_db),
+    admin_context=Depends(_admin_tenant_context),
+    _=Depends(require_mot_admin),
+):
+    tenant_context, _ = admin_context
+    booking = booking_logic._get_mot_booking_row(booking_id, db, tenant_context["tenant_id"])
+    if not booking:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MOT booking not found")
+    if not booking.customer_phone:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Booking has no customer phone number")
+
+    from ....services.whatsapp_service import whatsapp_service
+    from .bookings.notifications import _load_branding
+    from ....services.whatsapp_messages import build_mot_confirmation_message
+
+    branding = _load_branding(db, tenant_context["tenant_id"])
+    body = message or build_mot_confirmation_message(booking, branding)
+    success, provider_status, error = whatsapp_service.send_message(booking.customer_phone, body)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=error or "WhatsApp send failed")
+    return {
+        "message": "WhatsApp sent successfully",
+        "to": booking.customer_phone,
+        "booking_id": booking_id,
+        "provider_status": provider_status,
+    }
+
+
 @admin_router.delete("/bookings/{booking_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_mot_booking_admin(
     booking_id: str,

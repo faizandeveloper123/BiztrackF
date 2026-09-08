@@ -5,7 +5,6 @@ from typing import List, Optional
 from datetime import datetime, date, timedelta
 from pydantic import BaseModel
 import os
-import urllib.parse
 import logging
 
 from ...api.dependencies import get_current_user, get_tenant_context
@@ -1177,13 +1176,18 @@ async def send_profit_loss_report_whatsapp(
 Generated on {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}"""
         
         cleaned_phone = phone_number.replace('+', '').replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
-        whatsapp_url = f"https://wa.me/{cleaned_phone}?text={urllib.parse.quote(message)}"
-        
+        from ...services.whatsapp_service import whatsapp_service
+        success, provider_status, error = whatsapp_service.send_message(cleaned_phone, message)
+
+        if not success:
+            raise HTTPException(status_code=502, detail=error or "Failed to send WhatsApp message")
+
         return {
-            "message": "WhatsApp link generated successfully",
-            "whatsapp_url": whatsapp_url,
+            "message": "Profit/Loss report sent successfully via WhatsApp",
             "phone_number": phone_number,
-            "formatted_message": message
+            "formatted_message": message,
+            "send_status": "sent",
+            "provider_status": provider_status,
         }
         
     except HTTPException:

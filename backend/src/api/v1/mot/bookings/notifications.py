@@ -265,7 +265,7 @@ def notify_mot_booking_confirmation(db: Session, booking: MotBooking, tenant_id:
     branding = _load_branding(db, tenant_id)
     content = _build_mot_booking_email(booking, branding)
     email_service = EmailService()
-    return email_service.send_mot_booking_confirmation_email(
+    ok = email_service.send_mot_booking_confirmation_email(
         to_email=to_email,
         customer_name=booking.customer_name or "Customer",
         tenant_name=content["company_name"],
@@ -274,6 +274,25 @@ def notify_mot_booking_confirmation(db: Session, booking: MotBooking, tenant_id:
         plain_body=content["plain_body"],
         reply_to=content.get("reply_to"),
     )
+    _send_confirmation_whatsapp(db, booking, branding)
+    return ok
+
+
+def _send_confirmation_whatsapp(db: Session, booking: MotBooking, branding: Dict[str, Optional[str]]) -> bool:
+    phone = (booking.customer_phone or "").strip()
+    if not phone:
+        return False
+    try:
+        from .....services.whatsapp_service import whatsapp_service
+        from .....services.whatsapp_messages import build_mot_confirmation_message
+        message = build_mot_confirmation_message(booking, branding)
+        success, _, error = whatsapp_service.send_message(phone, message)
+        if not success and error:
+            logger.warning("MOT WhatsApp confirmation failed for %s: %s", booking.id, error)
+        return success
+    except Exception as exc:
+        logger.warning("MOT WhatsApp confirmation error for %s: %s", booking.id, exc)
+        return False
 
 
 def _build_mot_due_reminder_email(
@@ -419,7 +438,7 @@ def notify_mot_due_reminder(db: Session, booking: MotBooking, tenant_id: str) ->
     branding = _load_branding(db, tenant_id)
     content = _build_mot_due_reminder_email(booking, branding)
     email_service = EmailService()
-    return email_service.send_mot_due_reminder_email(
+    ok = email_service.send_mot_due_reminder_email(
         to_email=to_email,
         customer_name=booking.customer_name or "Customer",
         tenant_name=content["company_name"],
@@ -428,6 +447,31 @@ def notify_mot_due_reminder(db: Session, booking: MotBooking, tenant_id: str) ->
         plain_body=content["plain_body"],
         reply_to=content.get("reply_to"),
     )
+    days_left = (booking.mot_expiry_date - date.today()).days if booking.mot_expiry_date else 0
+    _send_due_reminder_whatsapp(db, booking, branding, days_left)
+    return ok
+
+
+def _send_due_reminder_whatsapp(
+    db: Session,
+    booking: MotBooking,
+    branding: Dict[str, Optional[str]],
+    days_left: int,
+) -> bool:
+    phone = (booking.customer_phone or "").strip()
+    if not phone:
+        return False
+    try:
+        from .....services.whatsapp_service import whatsapp_service
+        from .....services.whatsapp_messages import build_mot_due_reminder_message
+        message = build_mot_due_reminder_message(booking, branding, days_left)
+        success, _, error = whatsapp_service.send_message(phone, message)
+        if not success and error:
+            logger.warning("MOT WhatsApp reminder failed for %s: %s", booking.id, error)
+        return success
+    except Exception as exc:
+        logger.warning("MOT WhatsApp reminder error for %s: %s", booking.id, exc)
+        return False
 
 
 REMINDER_THRESHOLD_DAYS = [30]
@@ -526,21 +570,23 @@ def process_mot_due_reminders(db: Session, tenant_id: str) -> int:
                 if key in sent_keys:
                     continue
                 to_email = (booking.customer_email or "").strip()
-                if not to_email:
-                    continue
                 branding = _load_branding(db, tenant_id)
                 content = _due_reminder_email(booking, branding, days_left)
                 email_service = EmailService()
-                ok = email_service.send_mot_due_reminder_email(
-                    to_email=to_email,
-                    customer_name=booking.customer_name or "Customer",
-                    tenant_name=content["company_name"],
-                    subject=content["subject"],
-                    html_body=content["html_body"],
-                    plain_body=content["plain_body"],
-                    reply_to=content.get("reply_to"),
-                )
-                if ok:
+                delivered = False
+                if to_email:
+                    ok = email_service.send_mot_due_reminder_email(
+                        to_email=to_email,
+                        customer_name=booking.customer_name or "Customer",
+                        tenant_name=content["company_name"],
+                        subject=content["subject"],
+                        html_body=content["html_body"],
+                        plain_body=content["plain_body"],
+                        reply_to=content.get("reply_to"),
+                    )
+                    delivered = delivered or ok
+                delivered = _send_due_reminder_whatsapp(db, booking, branding, days_left) or delivered
+                if delivered:
                     _mark_reminder_sent(db, booking, key)
                     db.commit()
                     db.refresh(booking)

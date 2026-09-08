@@ -185,9 +185,26 @@ def send_invoice_whatsapp_endpoint(
             f"View/download PDF: {pdf_url}"
         )
 
+        to_phone = invoice.customerPhone or ""
+        if to_phone:
+            from .....services.whatsapp_service import whatsapp_service
+
+            success, provider_status, error = whatsapp_service.send_message(to_phone, message)
+            if not success:
+                logger.warning("Invoice WhatsApp send failed: %s", error)
+            return {
+                "message": "Invoice WhatsApp message sent successfully" if success else "WhatsApp send failed",
+                "formatted_message": message,
+                "pdf_url": pdf_url,
+                "to": to_phone,
+                "send_status": "sent" if success else "failed",
+                "error": error if not success else None,
+            }
+
         whatsapp_url = f"https://api.whatsapp.com/send/?text={urllib.parse.quote(message)}"
 
         return {
+            "message": "Invoice has no customer phone; using WhatsApp link fallback",
             "whatsapp_url": whatsapp_url,
             "formatted_message": message,
             "pdf_url": pdf_url,
@@ -196,8 +213,8 @@ def send_invoice_whatsapp_endpoint(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to generate WhatsApp link: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to generate WhatsApp link: {str(e)}")
+        logger.error(f"Failed to send invoice via WhatsApp: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to send invoice via WhatsApp: {str(e)}")
 
 
 def mark_invoice_as_paid_endpoint(

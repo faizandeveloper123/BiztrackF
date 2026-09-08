@@ -24,6 +24,7 @@ import {
   ClipboardList,
   FileDown,
   FileText,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiService } from "../../../services/ApiService";
@@ -56,6 +57,9 @@ function JobCardsContent() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [jobCardToDelete, setJobCardToDelete] = useState<JobCard | null>(null);
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
+  const [sendingWhatsAppId, setSendingWhatsAppId] = useState<string | null>(
+    null,
+  );
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [invoicePrefill, setInvoicePrefill] =
     useState<Partial<InvoiceCreate> | null>(null);
@@ -168,6 +172,22 @@ function JobCardsContent() {
     } catch {
     } finally {
       setDownloadingPdfId(null);
+    }
+  }, []);
+
+  const handleSendWhatsApp = useCallback(async (jc: JobCard) => {
+    if (!jc.customer_phone) {
+      toast.error("This job card has no customer phone number");
+      return;
+    }
+    setSendingWhatsAppId(jc.id);
+    try {
+      await apiService.post(`/job-cards/${jc.id}/send-whatsapp`, {});
+      toast.success("WhatsApp message sent to customer");
+    } catch (err) {
+      toast.error(extractErrorMessage(err, "Failed to send WhatsApp message"));
+    } finally {
+      setSendingWhatsAppId(null);
     }
   }, []);
 
@@ -366,6 +386,20 @@ function JobCardsContent() {
                               {downloadingPdfId === jc.id
                                 ? "Downloading..."
                                 : "Download PDF"}
+                            </Button>
+                          )}
+                          {jc.customer_phone && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSendWhatsApp(jc)}
+                              disabled={sendingWhatsAppId === jc.id}
+                              className="text-green-700 hover:text-green-800"
+                            >
+                              <MessageCircle className="h-4 w-4 mr-1" />
+                              {sendingWhatsAppId === jc.id
+                                ? "Sending..."
+                                : "WhatsApp"}
                             </Button>
                           )}
                           {canUpdate() && (
