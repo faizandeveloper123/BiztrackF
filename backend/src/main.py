@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 from .config.database import create_tables, get_plans, get_db
 from .api.v1 import auth, users, tenants, plans, sales, crm, hrm, healthcare, ngo, custom_options, invoices, invoice_customization, installments, delivery_notes, pos, inventory, subscriptions, job_cards, vehicles, quality_control, ledger, admin, file_upload, deduct_stock, customer_import, dashboard, investments, reports, notifications, events, profile, workshop, mot, whatsapp, agent_portal
 from .api.v1.rbac.router import router as rbac_router
+from .api.v1.whatsapp_templates.api import router as whatsapp_templates_router
 from .api.v1.projects.router import router as projects_router
 from .api.v1.tasks.router import router as tasks_router
 from .api.v1.banking.router import router as banking_router
@@ -233,6 +234,7 @@ app.include_router(admin.router)
 app.include_router(file_upload.router)
 app.include_router(notifications.router)
 app.include_router(whatsapp.router)
+app.include_router(whatsapp_templates_router)
 app.include_router(healthcare.router)
 app.include_router(ngo.router)
 

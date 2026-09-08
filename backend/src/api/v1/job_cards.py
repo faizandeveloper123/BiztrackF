@@ -21,31 +21,49 @@ from ...config.job_card_crud import (
 router = APIRouter(prefix="/job-cards", tags=["Job Cards"])
 
 
-def _send_customer_whatsapp(jc, subject: str = "created") -> None:
+def _send_customer_whatsapp(jc, subject: str = "created", db: Optional[Session] = None) -> None:
     """Best-effort WhatsApp notification to the job card customer."""
     phone = getattr(jc, "customer_phone", None)
     if not phone:
         return
+    if db is not None:
+        try:
+            from ...services.whatsapp_template_service import job_card_context, send_custom_template
+            from ...config.core_crud import get_tenant_by_id
+
+            tenant = get_tenant_by_id(str(jc.tenant_id), db)
+            branding = {
+                "company_name": tenant.name if tenant else None,
+                "tenant_name": tenant.name if tenant else "Workshop",
+            }
+            custom = send_custom_template(
+                db,
+                str(jc.tenant_id),
+                "job_card",
+                phone,
+                job_card_context(jc, branding),
+            )
+            if custom is not None:
+                success, _, error = custom
+                if not success and error:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        "WhatsApp custom template send failed for job card %s: %s", jc.id, error
+                    )
+                return
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Unexpected error while sending custom WhatsApp for job card %s", getattr(jc, "id", None)
+            )
     try:
         import os
         from ...services.whatsapp_service import whatsapp_service
-        from ...services.whatsapp_messages import build_job_card_message
+        from ...services.whatsapp_messages import build_job_card_message, job_card_params
 
         template = (os.getenv("BOTLINKD_JOB_CARD_TEMPLATE") or "").strip()
         if template:
-            vehicle = "your vehicle"
-            vi = getattr(jc, "vehicle_info", None) or {}
-            parts = [vi.get("make"), vi.get("model"), vi.get("registration_number")]
-            cleaned = [str(p).strip() for p in parts if p and str(p).strip()]
-            if cleaned:
-                vehicle = " ".join(cleaned)
-            params = [
-                getattr(jc, "customer_name", "") or "Customer",
-                getattr(jc, "job_card_number", "") or "",
-                getattr(jc, "title", "") or "",
-                getattr(jc, "status", "") or "",
-                vehicle,
-            ]
+            params = job_card_params(jc)
             success, _, error = whatsapp_service.send_template_message(
                 phone,
                 template=template,
@@ -225,7 +243,7 @@ def create_job_card_endpoint(
                 )
         except Exception:
             pass
-    _send_customer_whatsapp(jc, subject="completed" if jc.status == "completed" else "created")
+    _send_customer_whatsapp(jc, subject="completed" if jc.status == "completed" else "created", db=db)
     return _job_card_to_response(jc)
 
 
@@ -319,7 +337,7 @@ def update_job_card_endpoint(
     status_changed = "status" in data and data.get("status") is not None and data.get("status") != previous_status
     if status_changed:
         subject = "completed" if jc.status == "completed" else "status"
-        _send_customer_whatsapp(jc, subject=subject)
+        _send_customer_whatsapp(jc, subject=subject, db=db)
     return _job_card_to_response(jc)
 
 

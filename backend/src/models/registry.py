@@ -99,6 +99,7 @@ def register_all_models():
     )
     from .ngo import Donor, DonorLead, PartnerOrganization
     from .mot import MotBooking, MotSettings
+    from .whatsapp_template import WhatsAppTemplate
 
     _ = (
         PasswordResetToken,
@@ -201,4 +202,5 @@ def register_all_models():
         PartnerOrganization,
         MotBooking,
         MotSettings,
+        WhatsAppTemplate,
     )

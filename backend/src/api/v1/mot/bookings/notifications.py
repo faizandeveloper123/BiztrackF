@@ -283,26 +283,31 @@ def _send_confirmation_whatsapp(db: Session, booking: MotBooking, branding: Dict
     if not phone:
         return False
     try:
+        from .....services.whatsapp_template_service import mot_booking_context, send_custom_template
+
+        custom = send_custom_template(
+            db,
+            str(booking.tenant_id),
+            "mot_confirmation",
+            phone,
+            mot_booking_context(booking, branding),
+        )
+        if custom is not None:
+            success, _, error = custom
+            if not success and error:
+                logger.warning("MOT WhatsApp custom template confirmation failed for %s: %s", booking.id, error)
+            return success
+    except Exception as exc:
+        logger.warning("MOT WhatsApp custom template confirmation error for %s: %s", booking.id, exc)
+
+    try:
         import os
         from .....services.whatsapp_service import whatsapp_service
-        from .....services.whatsapp_messages import build_mot_confirmation_message
+        from .....services.whatsapp_messages import build_mot_confirmation_message, mot_confirmation_params
 
         template = (os.getenv("BOTLINKD_MOT_CONFIRMATION_TEMPLATE") or "").strip()
         if template:
-            ref = str(booking.id).replace("-", "").upper()[:8]
-            booking_date = ""
-            if booking.booking_date:
-                try:
-                    booking_date = booking.booking_date.strftime("%d/%m/%Y")
-                except Exception:
-                    booking_date = str(booking.booking_date)
-            params = [
-                booking.customer_name or "Customer",
-                _vehicle_line(booking),
-                booking_date,
-                f"{booking.start_time} – {booking.end_time}",
-                ref,
-            ]
+            params = mot_confirmation_params(booking, branding)
             success, _, error = whatsapp_service.send_template_message(
                 phone,
                 template=template,
@@ -490,26 +495,31 @@ def _send_due_reminder_whatsapp(
     if not phone:
         return False
     try:
+        from .....services.whatsapp_template_service import mot_reminder_context, send_custom_template
+
+        custom = send_custom_template(
+            db,
+            str(booking.tenant_id),
+            "mot_reminder",
+            phone,
+            mot_reminder_context(booking, branding, days_left),
+        )
+        if custom is not None:
+            success, _, error = custom
+            if not success and error:
+                logger.warning("MOT WhatsApp custom template reminder failed for %s: %s", booking.id, error)
+            return success
+    except Exception as exc:
+        logger.warning("MOT WhatsApp custom template reminder error for %s: %s", booking.id, exc)
+
+    try:
         import os
         from .....services.whatsapp_service import whatsapp_service
-        from .....services.whatsapp_messages import build_mot_due_reminder_message
+        from .....services.whatsapp_messages import build_mot_due_reminder_message, mot_reminder_params
 
         template = (os.getenv("BOTLINKD_MOT_REMINDER_TEMPLATE") or "").strip()
         if template:
-            ref = str(booking.id).replace("-", "").upper()[:8]
-            due_str = ""
-            if booking.mot_expiry_date:
-                try:
-                    due_str = booking.mot_expiry_date.strftime("%d/%m/%Y")
-                except Exception:
-                    due_str = str(booking.mot_expiry_date)
-            params = [
-                booking.customer_name or "Customer",
-                _vehicle_line(booking),
-                due_str,
-                str(days_left),
-                ref,
-            ]
+            params = mot_reminder_params(booking, branding, days_left)
             success, _, error = whatsapp_service.send_template_message(
                 phone,
                 template=template,
@@ -528,6 +538,144 @@ def _send_due_reminder_whatsapp(
     except Exception as exc:
         logger.warning("MOT WhatsApp reminder error for %s: %s", booking.id, exc)
         return False
+
+
+def _send_cancellation_whatsapp(db: Session, booking: MotBooking, branding: Dict[str, Optional[str]]) -> bool:
+    phone = (booking.customer_phone or "").strip()
+    if not phone:
+        return False
+    try:
+        from .....services.whatsapp_template_service import mot_booking_context, send_custom_template
+
+        custom = send_custom_template(
+            db,
+            str(booking.tenant_id),
+            "mot_cancellation",
+            phone,
+            mot_booking_context(booking, branding),
+        )
+        if custom is not None:
+            success, _, error = custom
+            if not success and error:
+                logger.warning("MOT WhatsApp custom template cancellation failed for %s: %s", booking.id, error)
+            return success
+    except Exception as exc:
+        logger.warning("MOT WhatsApp custom template cancellation error for %s: %s", booking.id, exc)
+
+    try:
+        import os
+        from .....services.whatsapp_service import whatsapp_service
+        from .....services.whatsapp_messages import build_mot_cancellation_message, mot_cancellation_params
+
+        template = (os.getenv("BOTLINKD_MOT_CANCELLATION_TEMPLATE") or "").strip()
+        if template:
+            params = mot_cancellation_params(booking, branding)
+            success, _, error = whatsapp_service.send_template_message(
+                phone,
+                template=template,
+                language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
+                body_params=params,
+            )
+            if not success and error:
+                logger.warning("MOT WhatsApp template cancellation failed for %s: %s", booking.id, error)
+            return success
+
+        message = build_mot_cancellation_message(booking, branding)
+        success, _, error = whatsapp_service.send_message(phone, message)
+        if not success and error:
+            logger.warning("MOT WhatsApp cancellation failed for %s: %s", booking.id, error)
+        return success
+    except Exception as exc:
+        logger.warning("MOT WhatsApp cancellation error for %s: %s", booking.id, exc)
+        return False
+
+
+def send_mot_cancellation_notification(db: Session, booking: MotBooking, tenant_id: str) -> bool:
+    branding = _load_branding(db, tenant_id)
+    return _send_cancellation_whatsapp(db, booking, branding)
+
+
+def _send_expired_whatsapp(db: Session, booking: MotBooking, branding: Dict[str, Optional[str]]) -> bool:
+    phone = (booking.customer_phone or "").strip()
+    if not phone:
+        return False
+    try:
+        from .....services.whatsapp_template_service import mot_booking_context, send_custom_template
+
+        custom = send_custom_template(
+            db,
+            str(booking.tenant_id),
+            "mot_expired",
+            phone,
+            mot_booking_context(booking, branding),
+        )
+        if custom is not None:
+            success, _, error = custom
+            if not success and error:
+                logger.warning("MOT WhatsApp custom template expired failed for %s: %s", booking.id, error)
+            return success
+    except Exception as exc:
+        logger.warning("MOT WhatsApp custom template expired error for %s: %s", booking.id, exc)
+
+    try:
+        import os
+        from .....services.whatsapp_service import whatsapp_service
+        from .....services.whatsapp_messages import mot_expired_params
+
+        template = (os.getenv("BOTLINKD_MOT_EXPIRED_TEMPLATE") or "").strip()
+        if template:
+            params = mot_expired_params(booking, branding)
+            success, _, error = whatsapp_service.send_template_message(
+                phone,
+                template=template,
+                language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
+                body_params=params,
+            )
+            if not success and error:
+                logger.warning("MOT WhatsApp template expired failed for %s: %s", booking.id, error)
+            return success
+
+        vehicle = " · ".join(
+            p.strip()
+            for p in [
+                getattr(booking, "vehicle_registration", ""),
+                getattr(booking, "vehicle_make", ""),
+                getattr(booking, "vehicle_model", ""),
+            ]
+            if p and str(p).strip()
+        ) or "your vehicle"
+        expiry = getattr(booking, "mot_expiry_date", None)
+        expiry_str = ""
+        if expiry:
+            try:
+                expiry_str = expiry.strftime("%A, %d %B %Y")
+            except Exception:
+                expiry_str = str(expiry)
+        ref = str(booking.id).replace("-", "").upper()[:8]
+        company = branding.get("company_name") or branding.get("tenant_name") or "Workshop"
+        lines = [
+            f"Hi {booking.customer_name or 'there'}! 👋",
+            "Your MOT has expired and it is now illegal to drive your vehicle on UK roads. 🚨",
+        ]
+        lines.append(f"Vehicle: {vehicle}")
+        if expiry_str:
+            lines.append(f"MOT expired on: {expiry_str}")
+        lines.append(f"Reference: #{ref}")
+        lines.append("")
+        lines.append(f"Book immediately with {company} to get back on the road — we'll fit you in as soon as possible.")
+        message = "\n".join(lines)
+        success, _, error = whatsapp_service.send_message(phone, message)
+        if not success and error:
+            logger.warning("MOT WhatsApp expired failed for %s: %s", booking.id, error)
+        return success
+    except Exception as exc:
+        logger.warning("MOT WhatsApp expired error for %s: %s", booking.id, exc)
+        return False
+
+
+def send_mot_expired_notification(db: Session, booking: MotBooking, tenant_id: str) -> bool:
+    branding = _load_branding(db, tenant_id)
+    return _send_expired_whatsapp(db, booking, branding)
 
 
 REMINDER_THRESHOLD_DAYS = [30]

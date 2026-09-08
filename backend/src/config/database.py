@@ -38,6 +38,7 @@ from .inventory_models import (
 
 from .job_card_models import JobCard
 from .vehicle_models import Vehicle
+from ..models.whatsapp_template import WhatsAppTemplate
 
 from ..models.invoices import (
     Invoice, Payment, DeliveryNote, InvoiceShareLink
@@ -393,6 +394,7 @@ __all__ = [
     'ChartOfAccounts', 'LedgerTransaction', 'JournalEntry', 
     'FinancialPeriod', 'Budget', 'BudgetItem',
     'Investment', 'EquipmentInvestment', 'InvestmentTransaction',
+    'WhatsAppTemplate',
     
     # All CRUD functions are also exported
 ]
