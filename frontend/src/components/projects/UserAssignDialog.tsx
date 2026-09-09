@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, User, X } from "lucide-react";
+import { Search, User } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { cn } from "@/src/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 
 export interface UserAssignItem {
   id?: string;
@@ -56,15 +64,6 @@ export function UserAssignDialog({
     }
   }, [open, initialSelectedIds]);
 
-  useEffect(() => {
-    if (!open) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onOpenChange(false);
-    }
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [open, onOpenChange]);
-
   const filteredUsers = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return users;
@@ -76,7 +75,7 @@ export function UserAssignDialog({
     });
   }, [users, searchQuery]);
 
-  if (!open) return null;
+  const selectedUsers = users.filter((u) => selectedIds.includes(getUserId(u)));
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -85,40 +84,32 @@ export function UserAssignDialog({
     });
   };
 
-  const selectedUsers = users.filter((u) => selectedIds.includes(getUserId(u)));
-
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onOpenChange(false);
-      }}
-    >
-      <div className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border bg-white shadow-xl">
-        <div className="flex shrink-0 items-center justify-between border-b px-5 py-4">
-          <h3 className="text-base font-semibold text-slate-900">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className={cn(
+          "flex max-h-[80vh] w-[calc(100vw-1.5rem)] max-w-lg flex-col",
+          "gap-0 overflow-hidden bg-white p-0",
+        )}
+      >
+        <DialogHeader className="shrink-0 border-b px-5 py-4 pr-14 text-left">
+          <DialogTitle className="text-base font-semibold">
             {title} ({selectedUsers.length}
             {mode === "team" ? " selected" : ""})
-          </h3>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => onOpenChange(false)}
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
         <div className="relative shrink-0 px-5 py-3">
-          <Search className="absolute left-8 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-8 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={mode === "pm" ? "Search users..." : "Search to add team members..."}
+            placeholder={
+              mode === "pm"
+                ? "Search users..."
+                : "Search to add team members..."
+            }
             className="pl-10"
             autoFocus
           />
@@ -148,21 +139,12 @@ export function UserAssignDialog({
                 >
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
-                      mode === "pm"
-                        ? selected
-                          ? "border-indigo-600 bg-indigo-600 text-white"
-                          : "border-gray-300"
-                        : selected
-                          ? "border-indigo-600 bg-indigo-600 text-white"
-                          : "border-gray-300"
+                      selected
+                        ? "border-indigo-600 bg-indigo-600 text-white"
+                        : "border-gray-300"
                     }`}
                   >
-                    {selected &&
-                      (mode === "pm" ? (
-                        <span className="text-xs leading-none">✓</span>
-                      ) : (
-                        <span className="text-xs leading-none">✓</span>
-                      ))}
+                    {selected && <span className="text-xs leading-none">✓</span>}
                   </span>
                   <User className="h-4 w-4 shrink-0 text-gray-400" />
                   <span className="min-w-0">
@@ -181,7 +163,7 @@ export function UserAssignDialog({
           )}
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-2 border-t px-5 py-4">
+        <DialogFooter className="shrink-0 border-t px-5 py-4">
           <Button
             type="button"
             variant="outline"
@@ -200,8 +182,8 @@ export function UserAssignDialog({
           >
             {confirmLabel}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
