@@ -220,6 +220,7 @@ export function wizardDataToBookingPayload(
   return {
     customer_name: formatCustomerName(data),
     customer_phone: data.customer.telephone,
+    whatsapp_number: data.customer.whatsappNumber,
     customer_email: data.customer.email,
     vehicle_registration: data.vehicle.registration,
     vehicle_make: data.vehicle.make,
@@ -306,6 +307,8 @@ export function bookingToWizardData(
       email: booking.customer_email || customerMeta.email || "",
       county: customerMeta.county || "",
       telephone: booking.customer_phone || customerMeta.telephone || "",
+      whatsappNumber:
+        booking.whatsapp_number || customerMeta.whatsappNumber || "",
       houseNumber: customerMeta.houseNumber || "",
       street: customerMeta.street || "",
       town: customerMeta.town || "",

@@ -142,6 +142,20 @@ export function Step4YourDetails({
         </div>
         <div className="space-y-2">
           <Label className="text-sm font-semibold">
+            WhatsApp Number{" "}
+            <span className="font-normal text-muted-foreground">
+              (optional — confirmation will be sent here)
+            </span>
+          </Label>
+          <Input
+            value={customer.whatsappNumber}
+            onChange={(e) => onChange({ whatsappNumber: e.target.value })}
+            placeholder="Include country code, e.g. +44 7700 900123"
+            className="h-12 rounded-xl border-2"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">
             House Number{" "}
             <span className="font-normal text-muted-foreground">
               (optional)

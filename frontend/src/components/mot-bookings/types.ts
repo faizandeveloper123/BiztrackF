@@ -14,6 +14,7 @@ export type MotBookingFiltersState = {
 export type MotBookingFormData = {
   customerName: string;
   customerPhone: string;
+  whatsappNumber: string;
   customerEmail: string;
   vehicleRegistration: string;
   vehicleMake: string;

@@ -97,6 +97,7 @@ export type MotWizardCustomer = {
   email: string;
   county: string;
   telephone: string;
+  whatsappNumber: string;
   houseNumber: string;
   street: string;
   town: string;
@@ -204,6 +205,7 @@ export function emptyMotWizardData(): MotWizardData {
       email: "",
       county: "",
       telephone: "",
+      whatsappNumber: "",
       houseNumber: "",
       street: "",
       town: "",

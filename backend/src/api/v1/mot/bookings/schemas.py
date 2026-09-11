@@ -9,6 +9,7 @@ from .....models.mot.enums import MotBookingStatus, MotTestType
 class MotBookingBase(BaseModel):
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
+    whatsapp_number: Optional[str] = None
     customer_email: Optional[str] = None
     vehicle_registration: Optional[str] = None
     vehicle_make: Optional[str] = None
@@ -35,6 +36,7 @@ class MotBookingCreate(MotBookingBase):
 class MotBookingUpdate(BaseModel):
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
+    whatsapp_number: Optional[str] = None
     customer_email: Optional[str] = None
     vehicle_registration: Optional[str] = None
     vehicle_make: Optional[str] = None

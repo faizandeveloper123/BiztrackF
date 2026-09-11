@@ -23,6 +23,7 @@ export function emptyMotBookingFormData(): MotBookingFormData {
   return {
     customerName: "",
     customerPhone: "",
+    whatsappNumber: "",
     customerEmail: "",
     vehicleRegistration: "",
     vehicleMake: "",
@@ -44,6 +45,7 @@ export function bookingToFormData(booking: MotBooking): MotBookingFormData {
   return {
     customerName: booking.customer_name || "",
     customerPhone: booking.customer_phone || "",
+    whatsappNumber: booking.whatsapp_number || "",
     customerEmail: booking.customer_email || "",
     vehicleRegistration: booking.vehicle_registration || "",
     vehicleMake: booking.vehicle_make || "",
@@ -67,6 +69,7 @@ export function formDataToPayload(
   return {
     customer_name: formData.customerName || undefined,
     customer_phone: formData.customerPhone || undefined,
+    whatsapp_number: formData.whatsappNumber || undefined,
     customer_email: formData.customerEmail || undefined,
     vehicle_registration: formData.vehicleRegistration || undefined,
     vehicle_make: formData.vehicleMake || undefined,

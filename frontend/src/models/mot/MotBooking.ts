@@ -21,6 +21,7 @@ export interface MotBooking {
   id: string;
   customer_name: string;
   customer_phone?: string;
+  whatsapp_number?: string;
   customer_email?: string;
   vehicle_registration?: string;
   vehicle_make?: string;
@@ -48,6 +49,7 @@ export interface MotBooking {
 export interface MotBookingCreate {
   customer_name?: string;
   customer_phone?: string;
+  whatsapp_number?: string;
   customer_email?: string;
   vehicle_registration?: string;
   vehicle_make?: string;

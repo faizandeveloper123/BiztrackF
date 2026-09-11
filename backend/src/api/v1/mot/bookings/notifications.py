@@ -257,29 +257,31 @@ def _build_mot_booking_email(
 
 
 def notify_mot_booking_confirmation(db: Session, booking: MotBooking, tenant_id: str) -> bool:
-    to_email = (booking.customer_email or "").strip()
-    if not to_email:
-        logger.info("MOT booking %s has no customer email; skipping confirmation email", booking.id)
-        return False
-
     branding = _load_branding(db, tenant_id)
-    content = _build_mot_booking_email(booking, branding)
-    email_service = EmailService()
-    ok = email_service.send_mot_booking_confirmation_email(
-        to_email=to_email,
-        customer_name=booking.customer_name or "Customer",
-        tenant_name=content["company_name"],
-        subject=content["subject"],
-        html_body=content["html_body"],
-        plain_body=content["plain_body"],
-        reply_to=content.get("reply_to"),
-    )
+    ok = False
+
+    to_email = (booking.customer_email or "").strip()
+    if to_email:
+        content = _build_mot_booking_email(booking, branding)
+        email_service = EmailService()
+        ok = email_service.send_mot_booking_confirmation_email(
+            to_email=to_email,
+            customer_name=booking.customer_name or "Customer",
+            tenant_name=content["company_name"],
+            subject=content["subject"],
+            html_body=content["html_body"],
+            plain_body=content["plain_body"],
+            reply_to=content.get("reply_to"),
+        )
+    else:
+        logger.info("MOT booking %s has no customer email; skipping confirmation email", booking.id)
+
     _send_confirmation_whatsapp(db, booking, branding)
     return ok
 
 
 def _send_confirmation_whatsapp(db: Session, booking: MotBooking, branding: Dict[str, Optional[str]]) -> bool:
-    phone = (booking.customer_phone or "").strip()
+    phone = (booking.whatsapp_number or "").strip()
     if not phone:
         return False
     try:
@@ -305,16 +307,14 @@ def _send_confirmation_whatsapp(db: Session, booking: MotBooking, branding: Dict
     try:
         import os
         from .....services.whatsapp_service import whatsapp_service
-        from .....services.whatsapp_messages import build_mot_confirmation_message, mot_confirmation_params
+        from .....services.whatsapp_messages import build_mot_confirmation_message
 
         template = (os.getenv("BOTLINKD_MOT_CONFIRMATION_TEMPLATE") or "").strip()
         if template:
-            params = mot_confirmation_params(booking, branding)
             success, _, error = whatsapp_service.send_template_message(
                 phone,
                 template=template,
                 language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
-                body_params=params,
             )
             if not success and error:
                 logger.warning("MOT WhatsApp template confirmation failed for %s: %s", booking.id, error)
@@ -493,7 +493,7 @@ def _send_due_reminder_whatsapp(
     branding: Dict[str, Optional[str]],
     days_left: int,
 ) -> bool:
-    phone = (booking.customer_phone or "").strip()
+    phone = (booking.whatsapp_number or "").strip()
     if not phone:
         return False
     try:
@@ -545,7 +545,7 @@ def _send_due_reminder_whatsapp(
 
 
 def _send_cancellation_whatsapp(db: Session, booking: MotBooking, branding: Dict[str, Optional[str]]) -> bool:
-    phone = (booking.customer_phone or "").strip()
+    phone = (booking.whatsapp_number or "").strip()
     if not phone:
         return False
     try:
@@ -602,7 +602,7 @@ def send_mot_cancellation_notification(db: Session, booking: MotBooking, tenant_
 
 
 def _send_expired_whatsapp(db: Session, booking: MotBooking, branding: Dict[str, Optional[str]]) -> bool:
-    phone = (booking.customer_phone or "").strip()
+    phone = (booking.whatsapp_number or "").strip()
     if not phone:
         return False
     try:

@@ -50,6 +50,18 @@ export function MotBookingFormFields({
             placeholder="Phone number"
           />
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="whatsappNumber">WhatsApp Number</Label>
+          <Input
+            id="whatsappNumber"
+            value={formData.whatsappNumber}
+            onChange={(e) => onChange({ whatsappNumber: e.target.value })}
+            placeholder="e.g. +447700900123 (with country code)"
+          />
+          <p className="text-xs text-muted-foreground">
+            WhatsApp confirmation is sent to this number.
+          </p>
+        </div>
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor="customerEmail">Email</Label>
           <Input

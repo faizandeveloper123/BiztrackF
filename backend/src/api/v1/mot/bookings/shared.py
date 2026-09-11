@@ -28,6 +28,7 @@ def mot_booking_to_schema(row: MotBooking) -> MotBookingSchema:
         id=str(row.id),
         customer_name=row.customer_name or "",
         customer_phone=row.customer_phone,
+        whatsapp_number=row.whatsapp_number,
         customer_email=row.customer_email,
         vehicle_registration=row.vehicle_registration,
         vehicle_make=row.vehicle_make,

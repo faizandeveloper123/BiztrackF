@@ -12,6 +12,7 @@ class MotBooking(Base):
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
     customer_name = Column(String(255), nullable=False)
     customer_phone = Column(String(50))
+    whatsapp_number = Column(String(50))
     customer_email = Column(String(255))
     vehicle_registration = Column(String(50))
     vehicle_make = Column(String(100))
