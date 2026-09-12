@@ -122,9 +122,13 @@ jobs:
             fi
             upsert_key() {
               local KEY="$1" VALUE="$2"
+              if [ -z "${VALUE}" ]; then
+                echo "Skipping ${KEY}: no secret value (preserving existing)"
+                return 0
+              fi
               if grep -q "^${KEY}=" "${ENV_FILE}"; then
                 sed -i "s|^${KEY}=.*|${KEY}=${VALUE}|" "${ENV_FILE}"
-              elif [ -n "${VALUE}" ]; then
+              else
                 printf '\n%s=%s\n' "${KEY}" "${VALUE}" >> "${ENV_FILE}"
               fi
             }
