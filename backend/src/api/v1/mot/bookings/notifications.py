@@ -13,6 +13,8 @@ from .....services.invoice_share import get_share_base_url
 
 logger = logging.getLogger(__name__)
 
+MOT_CONFIRMATION_TEMPLATE = "mot_reservation"
+
 DELIVERY_LABELS = {
     "drop_off": "Drop off — own onward travel",
     "wait_security": "Wait on site while vehicle is tested",
@@ -288,13 +290,9 @@ def _send_confirmation_whatsapp(db: Session, booking: MotBooking, branding: Dict
         import os
         from .....services.whatsapp_service import whatsapp_service
 
-        template = (os.getenv("BOTLINKD_MOT_CONFIRMATION_TEMPLATE") or "").strip()
-        if not template:
-            logger.warning("MOT WhatsApp confirmation skipped for %s: no approved template configured", booking.id)
-            return False
         success, _, error = whatsapp_service.send_template_message(
             phone,
-            template=template,
+            template=MOT_CONFIRMATION_TEMPLATE,
             language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
         )
         if not success and error:

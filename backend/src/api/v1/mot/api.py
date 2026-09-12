@@ -16,7 +16,11 @@ from .bookings.schemas import (
     MotBookingStats,
 )
 from .bookings import logic as booking_logic
-from .bookings.notifications import process_mot_due_reminders, process_all_tenants_mot_reminders
+from .bookings.notifications import (
+    process_mot_due_reminders,
+    process_all_tenants_mot_reminders,
+    MOT_CONFIRMATION_TEMPLATE,
+)
 from .settings.schemas import MotSettingsResponse, MotSettingsUpdate
 from .settings import logic as settings_logic
 from .tenant_context import resolve_mot_tenant_by_domain
@@ -265,21 +269,27 @@ async def send_mot_booking_whatsapp(
     booking = booking_logic._get_mot_booking_row(booking_id, db, tenant_context["tenant_id"])
     if not booking:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="MOT booking not found")
-    if not booking.customer_phone:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Booking has no customer phone number")
 
+    import os
     from ....services.whatsapp_service import whatsapp_service
-    from .bookings.notifications import _load_branding
-    from ....services.whatsapp_messages import build_mot_confirmation_message
 
-    branding = _load_branding(db, tenant_context["tenant_id"])
-    body = message or build_mot_confirmation_message(booking, branding)
-    success, provider_status, error = whatsapp_service.send_message(booking.customer_phone, body)
+    target = (booking.whatsapp_number or "").strip() or (booking.customer_phone or "").strip()
+    if not target:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Booking has no WhatsApp number")
+
+    if message:
+        success, provider_status, error = whatsapp_service.send_message(target, message)
+    else:
+        success, provider_status, error = whatsapp_service.send_template_message(
+            target,
+            template=MOT_CONFIRMATION_TEMPLATE,
+            language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
+        )
     if not success:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=error or "WhatsApp send failed")
     return {
         "message": "WhatsApp sent successfully",
-        "to": booking.customer_phone,
+        "to": target,
         "booking_id": booking_id,
         "provider_status": provider_status,
     }
