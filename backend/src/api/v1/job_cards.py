@@ -22,69 +22,33 @@ router = APIRouter(prefix="/job-cards", tags=["Job Cards"])
 
 
 def _send_customer_whatsapp(jc, subject: str = "created", db: Optional[Session] = None) -> None:
-    """Best-effort WhatsApp notification to the job card customer."""
+    """Send the approved WhatsApp template to the job card customer (best effort)."""
     phone = getattr(jc, "customer_phone", None)
     if not phone:
         return
-    if db is not None:
-        try:
-            from ...services.whatsapp_template_service import job_card_context, send_custom_template
-            from ...config.core_crud import get_tenant_by_id
-
-            tenant = get_tenant_by_id(str(jc.tenant_id), db)
-            branding = {
-                "company_name": tenant.name if tenant else None,
-                "tenant_name": tenant.name if tenant else "Workshop",
-            }
-            custom = send_custom_template(
-                db,
-                str(jc.tenant_id),
-                "job_card",
-                phone,
-                job_card_context(jc, branding),
-            )
-            if custom is not None:
-                success, _, error = custom
-                if success:
-                    return
-                if error:
-                    import logging
-                    logging.getLogger(__name__).warning(
-                        "WhatsApp custom template send failed for job card %s: %s", jc.id, error
-                    )
-                # fall through to approved template path
-        except Exception:
-            import logging
-            logging.getLogger(__name__).exception(
-                "Unexpected error while sending custom WhatsApp for job card %s", getattr(jc, "id", None)
-            )
     try:
+        import logging
         import os
         from ...services.whatsapp_service import whatsapp_service
-        from ...services.whatsapp_messages import build_job_card_message, job_card_params
+        from ...services.whatsapp_messages import job_card_params
 
         template = (os.getenv("BOTLINKD_JOB_CARD_TEMPLATE") or "").strip()
-        if template:
-            params = job_card_params(jc)
-            success, _, error = whatsapp_service.send_template_message(
-                phone,
-                template=template,
-                language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
-                body_params=params,
+        if not template:
+            logging.getLogger(__name__).warning(
+                "WhatsApp send skipped for job card %s: no approved template configured", jc.id
             )
-            if not success and error:
-                import logging
-                logging.getLogger(__name__).warning(
-                    "WhatsApp template send failed for job card %s: %s", jc.id, error
-                )
             return
-
-        message = build_job_card_message(jc, subject=subject)
-        success, _, error = whatsapp_service.send_message(phone, message)
+        params = job_card_params(jc)
+        success, _, error = whatsapp_service.send_template_message(
+            phone,
+            template=template,
+            language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
+            body_params=params,
+        )
         if not success and error:
             import logging
             logging.getLogger(__name__).warning(
-                "WhatsApp send failed for job card %s: %s", jc.id, error
+                "WhatsApp template send failed for job card %s: %s", jc.id, error
             )
     except Exception:
         import logging
