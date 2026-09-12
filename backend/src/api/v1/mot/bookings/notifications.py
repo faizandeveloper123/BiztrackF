@@ -296,7 +296,9 @@ def _send_confirmation_whatsapp(db: Session, booking: MotBooking, branding: Dict
             language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
         )
         if not success and error:
-            logger.warning("MOT WhatsApp template confirmation failed for %s: %s", booking.id, error)
+            logger.warning("MOT WhatsApp template confirmation failed for %s via %s: %s", booking.id, MOT_CONFIRMATION_TEMPLATE, error)
+        if success:
+            logger.info("MOT WhatsApp confirmation sent for %s via %s", booking.id, MOT_CONFIRMATION_TEMPLATE)
         return success
     except Exception as exc:
         logger.warning("MOT WhatsApp confirmation error for %s: %s", booking.id, exc)
