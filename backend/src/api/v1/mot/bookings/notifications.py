@@ -287,18 +287,15 @@ def _send_confirmation_whatsapp(db: Session, booking: MotBooking, branding: Dict
     try:
         import os
         from .....services.whatsapp_service import whatsapp_service
-        from .....services.whatsapp_messages import mot_confirmation_params
 
         template = (os.getenv("BOTLINKD_MOT_CONFIRMATION_TEMPLATE") or "").strip()
         if not template:
             logger.warning("MOT WhatsApp confirmation skipped for %s: no approved template configured", booking.id)
             return False
-        params = mot_confirmation_params(booking, branding)
         success, _, error = whatsapp_service.send_template_message(
             phone,
             template=template,
             language=os.getenv("BOTLINKD_TEMPLATE_LANGUAGE", "en"),
-            body_params=params,
         )
         if not success and error:
             logger.warning("MOT WhatsApp template confirmation failed for %s: %s", booking.id, error)
